@@ -1,47 +1,23 @@
-import axios from 'axios';
-import {API_BASE_URL} from './apiPaths';
+import axios from "axios";
+
 const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 60000, // Increased to 60 seconds for OCR processing
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json"
+  }
 });
 
-axiosInstance.interceptors.request.use((config) => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (accessToken) {
-        config.headers['Authorization'] = `Bearer ${accessToken}`;
+// Optional: attach token automatically
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Special timeout for receipt processing
-    if (config.url && config.url.includes('/receipt/extract')) {
-        config.timeout = 120000; // 2 minutes for OCR processing
-    }
-    
     return config;
-}, (error) => {
-    return Promise.reject(error);
-});
-
-axiosInstance.interceptors.response.use((response) => {
-    return response;
-}, (error) => {
-    if(error.response) {
-        // Handle specific error responses
-        if(error.response.status === 401) {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/login';
-        } else if(error.response.status === 500) {
-            console.error('Server error:', error.response.data);
-            alert('An unexpected error occurred. Please try again later.');
-        }
-    } else if(error.code === "ECONNABORTED"){
-        console.error('Request timeout:', error.message);
-        alert('Request timed out. Please check your internet connection and try again.');
-    }
-    return Promise.reject(error);
-});
+  },
+  (error) => Promise.reject(error)
+);
 
 export default axiosInstance;
